@@ -20,9 +20,10 @@ def get_images(image_name_list, path):
 
     for i in range(len(image_name_list)):
             im = Image.open(os.path.join(path, image_name_list[i] + '.jpg'))
+            im = im.resize((512, 512), Image.ANTIALIAS)
             image_list.append(im)
-            if i > 500:
-                break
+            #if i > 1000:
+            #    break
 
     return image_list
 
@@ -30,6 +31,7 @@ def get_bbox_list(image_name_list, path):
     dir_path = path
     bbox_list = []
     i=-1
+    xmin, ymin, xmax, ymax = 1, 1, 1, 1
     for file in image_name_list:
         i = i + 1
         bboxs = []
@@ -50,6 +52,6 @@ def get_bbox_list(image_name_list, path):
                                 xmax = int(gg_child.text)
                             if(gg_child.tag == "ymax"):
                                 ymax = int(gg_child.text)
-                        bboxs.append(((xmin, ymin, xmax - xmin, ymax - ymin), category))
-                bbox_list.append(bboxs)
+                bboxs.append(((xmin, ymin, xmax - xmin, ymax - ymin), category))
+        bbox_list.append(bboxs)
     return bbox_list
