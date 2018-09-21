@@ -3,6 +3,29 @@ import glob
 import os
 import numpy as np
 import xml.etree.ElementTree as et
+import cv2
+
+category_dict = {}
+category_dict['person'] = 1
+category_dict['bird'] = 2
+category_dict['cat'] = 3
+category_dict['cow'] = 4
+category_dict['dog'] = 5
+category_dict['horse'] = 6
+category_dict['sheep'] = 7
+category_dict['aeroplane'] = 8
+category_dict['bicycle'] = 9
+category_dict['boat'] = 10
+category_dict['bus'] = 11
+category_dict['car'] = 12
+category_dict['motorbike'] = 13
+category_dict['train'] = 14
+category_dict['bottle'] = 15
+category_dict['chair'] = 16
+category_dict['diningtable'] = 17
+category_dict['pottedplant'] = 18
+category_dict['sofa'] = 19
+category_dict['tvmonitor'] = 20
 
 def get_image_names(path):
     f = open(path, 'r')
@@ -20,11 +43,10 @@ def get_images(image_name_list, path):
 
     for i in range(len(image_name_list)):
             im = Image.open(os.path.join(path, image_name_list[i] + '.jpg'))
-            im = im.resize((512, 512), Image.ANTIALIAS)
+            im = im.resize((256, 256), Image.ANTIALIAS)
+            im = np.asarray(im, dtype = "float32")
             image_list.append(im)
-            #if i > 1000:
-            #    break
-
+            break
     return image_list
 
 def get_bbox_list(image_name_list, path):
@@ -41,7 +63,7 @@ def get_bbox_list(image_name_list, path):
             if(child.tag == "object"):
                 for g_child in child:
                     if(g_child.tag == "name"):
-                        category = g_child.text
+                        category = category_dict[g_child.text]
                     if(g_child.tag == "bndbox"):
                         for gg_child in g_child:
                             if(gg_child.tag == "xmin"):
@@ -54,4 +76,13 @@ def get_bbox_list(image_name_list, path):
                                 ymax = int(gg_child.text)
                 bboxs.append(((xmin, ymin, xmax - xmin, ymax - ymin), category))
         bbox_list.append(bboxs)
-    return bbox_list
+    return np.asarray(bbox_list)
+
+class ToTensor(object):
+    def __call__(self, sample):
+        image = torch.from_numpy(sample['img'])
+        predict = torch.from_numpy((sample['predict'])
+        return_value = {}
+        return_dict['img'] = image
+        return_dict['predict'] = image
+        return  return_value
