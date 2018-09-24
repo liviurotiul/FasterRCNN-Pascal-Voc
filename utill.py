@@ -38,6 +38,12 @@ def get_image_names(path):
     return image_name_list
 
 def get_images(image_name_list, path):
+    '''
+    image_name_list: a list of the names of the imagea files without the extensions
+    path: path to the image folder
+    -this function returns the image as an RGB? array
+    '''
+
 
     image_list = []
 
@@ -50,6 +56,12 @@ def get_images(image_name_list, path):
     return image_list
 
 def get_bbox_list(image_name_list, path):
+    '''
+    image_name_list: a list of the names of the imagea files without the extensions
+    path: the path of the xml files
+    -this function gets reads the xml file and extracts the bounding boxes and classes respectively
+    -it returns a numpy array containing the bbox list and classes acordingly
+    '''
     dir_path = path
     bbox_list = []
     i=-1
@@ -81,8 +93,8 @@ def get_bbox_list(image_name_list, path):
 class ToTensor(object):
     def __call__(self, sample):
         image = torch.from_numpy(sample['img'])
-        predict = torch.from_numpy((sample['predict'])
-        return_value = {}
+        predict = torch.from_numpy(sample['predict'])
+        return_dict = {}
         return_dict['img'] = image
         return_dict['predict'] = image
-        return  return_value
+        return  return_dict
