@@ -2,7 +2,7 @@ from PIL import Image
 import glob
 import os
 import numpy as np
-from utill import *
+from util import *
 from torch.utils.data import Dataset, DataLoader
 
 class VOC2012Dataset(Dataset):
