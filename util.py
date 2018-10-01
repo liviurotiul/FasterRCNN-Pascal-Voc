@@ -4,6 +4,7 @@ import os
 import numpy as np
 import xml.etree.ElementTree as et
 import cv2
+import torch
 
 category_dict = {}
 category_dict['person'] = 1
@@ -28,13 +29,14 @@ category_dict['sofa'] = 19
 category_dict['tvmonitor'] = 20
 
 def get_image_names(path):
+    print("loading names...")
+
     f = open(path, 'r')
-
     image_name_list = []
-
     for line in f:
         name = line.split(None, 1)[0]
         image_name_list.append(name)
+
     return image_name_list
 
 def get_images(image_name_list, path):
@@ -44,17 +46,17 @@ def get_images(image_name_list, path):
     -this function returns the image as an RGB? array
     '''
 
+    print("loading images...")
 
     image_list = []
-
     for i in range(len(image_name_list)):
-            im = Image.open(os.path.join(path, image_name_list[i] + '.jpg'))
-            im = im.resize((256, 256), Image.ANTIALIAS)
-            im = np.asarray(im, dtype = "float32")
-            #im = np.rollaxis(im, 3, 1)
-            image_list.append(im)
-            break
-    return image_list
+        im = Image.open(os.path.join(path, image_name_list[i] + '.jpg'))# TODO: de facut resisze la ancore 
+        im = im.resize((512, 512), Image.ANTIALIAS)
+        im = np.asarray(im, dtype = "float32")
+        im = np.transpose(im,(2, 0, 1))
+        image_list.append(im)
+        print(image_name_list[i], " loaded")
+    return np.asarray(image_list)
 
 def get_bbox_list(image_name_list, path):
     '''
@@ -63,9 +65,13 @@ def get_bbox_list(image_name_list, path):
     -this function gets reads the xml file and extracts the bounding boxes and classes respectively
     -it returns a numpy array containing the bbox list and classes acordingly
     '''
+
+
+    print("loading bounding boxes...")
+
     dir_path = path
     bbox_list = []
-    i=-1
+    i = -1
     xmin, ymin, xmax, ymax = 1, 1, 1, 1
     for file in image_name_list:
         i = i + 1
@@ -87,15 +93,10 @@ def get_bbox_list(image_name_list, path):
                                 xmax = int(gg_child.text)
                             if(gg_child.tag == "ymax"):
                                 ymax = int(gg_child.text)
-                bboxs.append(((xmin, ymin, xmax - xmin, ymax - ymin), category))
+                bboxs.append(xmin)
+                bboxs.append(ymin)
+                bboxs.append(xmax - xmin)
+                bboxs.append(ymax - ymin)
+                bboxs.append(category)
         bbox_list.append(bboxs)
-    return np.asarray(bbox_list)
-
-class ToTensor(object):
-    def __call__(self, sample):
-        image = torch.from_numpy(sample['img'])
-        predict = torch.from_numpy(sample['predict'])
-        return_dict = {}
-        return_dict['img'] = image
-        return_dict['predict'] = image
-        return  return_dict
+    return bbox_list
