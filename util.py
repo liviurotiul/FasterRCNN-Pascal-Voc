@@ -50,7 +50,7 @@ def get_images(image_name_list, path):
 
     image_list = []
     for i in range(len(image_name_list)):
-        im = Image.open(os.path.join(path, image_name_list[i] + '.jpg'))# TODO: de facut resisze la ancore 
+        im = Image.open(os.path.join(path, image_name_list[i] + '.jpg'))# TODO: de facut resisze la ancore
         im = im.resize((512, 512), Image.ANTIALIAS)
         im = np.asarray(im, dtype = "float32")
         im = np.transpose(im,(2, 0, 1))
