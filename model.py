@@ -25,12 +25,14 @@ def anchors(height, width):
     for i in range(9):
         x = ratios[i,0]
         y = ratios[i,1]
-        X = height - x/2
-        Y = width - y/2
-        anchor_fibre[i*4] = X
-        anchor_fibre[i*4+1] = Y
-        anchor_fibre[i*4+2] = x
-        anchor_fibre[i*4+3] = y
+        Xmin = height - x/2
+        Ymin = width - y/2
+        Xmax = height + x/2
+        Ymax = width + y/2
+        anchor_fibre[i*4] = Xmin
+        anchor_fibre[i*4+1] = Ymin
+        anchor_fibre[i*4+2] = Xmin
+        anchor_fibre[i*4+3] = Ymax
     return anchor_fibre
 
 
@@ -89,11 +91,27 @@ def main():
 
     for i, data in enumerate(trainloader, 0):
         print("loading batch no.", i+1)
-        batch_images = np.asarray(get_images(data, "/home/liviur/Documents/my_faster_rcnn/data/VOCdevkit/VOC2012/JPEGImages"))
-        batch_predictions = np.asarray(get_bbox_list(data, '/home/liviur/Documents/my_faster_rcnn/data/VOCdevkit/VOC2012/Annotations'))
+
+        batch_images, batch_ratios = get_images(data, "/home/liviur/Documents/my_faster_rcnn/data/VOCdevkit/VOC2012/JPEGImages")
+        batch_anchors = np.asarray(get_bbox_list(data, '/home/liviur/Documents/my_faster_rcnn/data/VOCdevkit/VOC2012/Annotations'))
+
         batch_images = torch.from_numpy(batch_images)
+
         batch_featuremap, rpn_predictions = net(batch_images)
-        print(batch_featuremap.size())
+
+        rpn_predictions_numpy = rpn_predictions.detach().numpy()
+        print(np.shape(rpn_predictions_numpy))
+        rpn_predictions_numpy = np.rollaxis(rpn_predictions_numpy, 2,1)
+        rpn_predictions_numpy = np.rollaxis(rpn_predictions_numpy, 3,2)
+        print(np.shape(rpn_predictions_numpy))
+
+        print(np.shape(anchor_tensor))
+
+        for i in range(len(rpn_predictions_numpy)):
+            rpn_predictions_numpy[i] = anchor_tensor - rpn_predictions_numpy[i]
+
+        NMS(rpn_predictions_numpy, batch_anchors)
+
         break
         # TODO: intersection over union
         # TODO: roi pooling

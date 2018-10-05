@@ -49,14 +49,21 @@ def get_images(image_name_list, path):
     print("loading images...")
 
     image_list = []
+    image_ratios = {}
     for i in range(len(image_name_list)):
         im = Image.open(os.path.join(path, image_name_list[i] + '.jpg'))# TODO: de facut resisze la ancore
+        width, height = im.size
+        height_ratio = height/512
+        width_ratio = width/512
+        index = str(i)
+        image_ratios[index + 'h'] = height_ratio
+        image_ratios[index + 'w'] = width_ratio
         im = im.resize((512, 512), Image.ANTIALIAS)
         im = np.asarray(im, dtype = "float32")
         im = np.transpose(im,(2, 0, 1))
         image_list.append(im)
         print(image_name_list[i], " loaded")
-    return np.asarray(image_list)
+    return np.asarray(image_list), image_ratios
 
 def get_bbox_list(image_name_list, path):
     '''
@@ -95,8 +102,33 @@ def get_bbox_list(image_name_list, path):
                                 ymax = int(gg_child.text)
                 bboxs.append(xmin)
                 bboxs.append(ymin)
-                bboxs.append(xmax - xmin)
-                bboxs.append(ymax - ymin)
+                bboxs.append(xmax)
+                bboxs.append(ymax)
                 bboxs.append(category)
         bbox_list.append(bboxs)
     return bbox_list
+
+
+def NMS(proposals, ground_truth):
+
+    for k in range(proposals):
+        for i in range(32):
+            for j in range(32):
+                anchor_fibre = proposals[k,i,j]
+                anchor_fibre = np.resize(anchor_fibre, (9,4))
+                for x in anchor_fibre:
+                    for y in ground_truth:
+                        if IoU(x,y) > 0.5
+
+
+def IoU(anchor1, anchor2):
+    X1 = max(anchor1[0], anchor2[0])
+    Y1 = max(anchor1[1], anchor2[1])
+    X2 = min(anchor1[2], anchor2[2])
+    Y2 = min(anchor1[3], anchor2[3])
+
+    intersection = max(0, X1 - X2 + 1) * max(0, Y1 - Y2 + 1)
+
+    union = (anchor1[2] - anchor1[0] + 1) * (anchor1[3] - anchor1[1] + 1) + (anchor2[2] - anchor2[0] + 1) * (anchor2[3] - anchor2[1] + 1) - intersection
+
+    return intersection/union
