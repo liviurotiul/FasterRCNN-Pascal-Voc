@@ -65,6 +65,7 @@ class Net(nn.Module):
         self.conv42 = nn.Conv2d(256, 512, 3, padding=2)
         self.pool4 = nn.MaxPool2d(2)
         self.rpn_conv1 = nn.Conv2d(512, 36, 1)
+        self.rpn_conv2 = nn.Conv2d(512, 18, 1)
     def forward(self, x):
         x = F.relu(self.conv11(x))
         x = F.relu(self.conv12(x))
@@ -79,12 +80,13 @@ class Net(nn.Module):
         x = F.relu(self.conv42(x))
         x = self.pool4(x)
         y = self.rpn_conv1(x)
+        z = self.rpn_conv2(x)
         return x, y
 
 def main():
     net = Net()
 
-    criterion = nn.CrossEntropyLoss()
+    criterion = nn.SmoothL1Loss()
     optimizer = optim.SGD(net.parameters(),
         lr = float(1e-3), momentum = float(1e-3))
     print("starting training")
@@ -94,26 +96,36 @@ def main():
 
         batch_images, batch_ratios = get_images(data, "/home/liviur/Documents/my_faster_rcnn/data/VOCdevkit/VOC2012/JPEGImages")
         batch_anchors = np.asarray(get_bbox_list(data, '/home/liviur/Documents/my_faster_rcnn/data/VOCdevkit/VOC2012/Annotations'))
+        print(len(batch_images))
+        for j in range(len(batch_anchors)):
+            
+            height_ratio = batch_ratios[str(j) + 'h']
+            width_ratio = batch_ratios[str(j) + 'w']
+
+            for k in range(len(batch_anchors[i])):
+                batch_anchors[j, k, 0] = int(batch_anchors[j, k, 0]*height_ratio)
+                batch_anchors[j, k, 1] = int(batch_anchors[j, k, 1]*width_ratio)
+                batch_anchors[j, k, 2] = int(batch_anchors[j, k, 2]*height_ratio)
+                batch_anchors[j, k, 3] = int(batch_anchors[j, k, 3]*width_ratio)
 
         batch_images = torch.from_numpy(batch_images)
 
         batch_featuremap, rpn_predictions = net(batch_images)
 
         rpn_predictions_numpy = rpn_predictions.detach().numpy()
-        print(np.shape(rpn_predictions_numpy))
+
         rpn_predictions_numpy = np.rollaxis(rpn_predictions_numpy, 2,1)
         rpn_predictions_numpy = np.rollaxis(rpn_predictions_numpy, 3,2)
-        print(np.shape(rpn_predictions_numpy))
 
-        print(np.shape(anchor_tensor))
 
         for i in range(len(rpn_predictions_numpy)):
             rpn_predictions_numpy[i] = anchor_tensor - rpn_predictions_numpy[i]
 
-        NMS(rpn_predictions_numpy, batch_anchors)
+        nms_proposals = NMS(rpn_predictions_numpy, batch_anchors)
+        print(len(nms_proposals))
 
         break
-        # TODO: intersection over union
+
         # TODO: roi pooling
 if __name__ == '__main__':
    main()

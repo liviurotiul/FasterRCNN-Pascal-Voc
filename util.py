@@ -82,15 +82,21 @@ def get_bbox_list(image_name_list, path):
     xmin, ymin, xmax, ymax = 1, 1, 1, 1
     for file in image_name_list:
         i = i + 1
+
         bboxs = []
+        bbox_list = []
+        batch_bbox_list = []
+
         xml_file = et.parse(os.path.join(dir_path, file + '.xml'))
         root = xml_file.getroot()
         for child in root:
             if(child.tag == "object"):
                 for g_child in child:
+                    bbox_list = []
                     if(g_child.tag == "name"):
                         category = category_dict[g_child.text]
                     if(g_child.tag == "bndbox"):
+                        bboxs = []
                         for gg_child in g_child:
                             if(gg_child.tag == "xmin"):
                                 xmin = int(gg_child.text)
@@ -100,25 +106,32 @@ def get_bbox_list(image_name_list, path):
                                 xmax = int(gg_child.text)
                             if(gg_child.tag == "ymax"):
                                 ymax = int(gg_child.text)
-                bboxs.append(xmin)
-                bboxs.append(ymin)
-                bboxs.append(xmax)
-                bboxs.append(ymax)
-                bboxs.append(category)
-        bbox_list.append(bboxs)
-    return bbox_list
+                            bboxs.append(xmin)
+                            bboxs.append(ymin)
+                            bboxs.append(xmax)
+                            bboxs.append(ymax)
+                            bboxs.append(category)
+                    bbox_list.append(bboxs)
+        batch_bbox_list.append(bbox_list)
+    return batch_bbox_list
 
 
 def NMS(proposals, ground_truth):
-
-    for k in range(proposals):
+    nms_proposals = []
+    c = 0
+    for k in range(len(proposals)):
         for i in range(32):
             for j in range(32):
                 anchor_fibre = proposals[k,i,j]
                 anchor_fibre = np.resize(anchor_fibre, (9,4))
+                c = 0
                 for x in anchor_fibre:
+                    c = c + 1
                     for y in ground_truth:
-                        if IoU(x,y) > 0.5
+                        if IoU(x,y) > 1:
+                            nms_proposals.append((k, i, j, c))
+    return nms_proposals
+
 
 
 def IoU(anchor1, anchor2):
@@ -131,4 +144,8 @@ def IoU(anchor1, anchor2):
 
     union = (anchor1[2] - anchor1[0] + 1) * (anchor1[3] - anchor1[1] + 1) + (anchor2[2] - anchor2[0] + 1) * (anchor2[3] - anchor2[1] + 1) - intersection
 
+    if intersection/union > 1:
+        print(anchor1)
+        print(anchor2)
+        print()
     return intersection/union
